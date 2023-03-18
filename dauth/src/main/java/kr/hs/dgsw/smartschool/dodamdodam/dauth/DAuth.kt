@@ -5,14 +5,18 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.MutableLiveData
 import com.google.gson.GsonBuilder
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kr.hs.dgsw.smartschool.dodamdodam.dauth.request.LoginRequest
 import kr.hs.dgsw.smartschool.dodamdodam.dauth.request.TokenRequest
 import kr.hs.dgsw.smartschool.dodamdodam.dauth.response.TokenResponse
@@ -20,6 +24,7 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.net.URL
 import java.util.concurrent.TimeUnit
 
 object DAuth {
@@ -30,8 +35,8 @@ object DAuth {
     private const val BASE_URL = "https://dodam.b1nd.com/api/"
 
     private var isInstalled = true
-    private val tokenData = MutableStateFlow(TokenResponse("", ""))
-    private val error = MutableStateFlow(Throwable())
+    private val tokenData = MutableLiveData<TokenResponse>()
+    private val error = MutableLiveData<Throwable>()
 
     private val okHttpClient = OkHttpClient().newBuilder()
         .connectTimeout(60, TimeUnit.SECONDS)
@@ -92,12 +97,12 @@ object DAuth {
                             val code = it.data.location.split("=", "&")[1]
                             getToken(TokenRequest(code, clientId, clientSecret))
                                 .onSuccess { token ->
-                                    tokenData.emit(token.data)
+                                    tokenData.value = token.data
                                 }.onFailure { tokenError ->
-                                    error.emit(Throwable(tokenError.message))
+                                    error.value = Throwable(tokenError.message)
                                 }
                         }.onFailure {
-                            error.emit(Throwable(it.message))
+                            error.value = Throwable(it.message)
                         }
                 }
             }
@@ -111,21 +116,12 @@ object DAuth {
     ) {
         val component = ComponentName(DODAM_PACKAGE, ACTIVITY_URL)
         val intent = Intent(Intent.ACTION_MAIN)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
         intent.component = component
 
-        if (isInstalled) {
-            register.launch(intent)
-
-            CoroutineScope(Dispatchers.IO).launch {
-                tokenData.collectLatest {
-                    onSuccess(it)
-                }
-                error.collectLatest {
-                    onFailure(it)
-                }
-            }
-        } else {
-            onFailure(Throwable("도담도담을 설치해주세요"))
+        if (isInstalled) register.launch(intent)
+        else {
+            error.value = Throwable("도담도담을 설치해주세요")
 
             try {
                 startActivity(
@@ -142,6 +138,13 @@ object DAuth {
                     )
                 )
             }
+        }
+
+        tokenData.observe(this as LifecycleOwner) {
+            onSuccess(it)
+        }
+        error.observe(this as LifecycleOwner) {
+            onFailure(it)
         }
     }
 

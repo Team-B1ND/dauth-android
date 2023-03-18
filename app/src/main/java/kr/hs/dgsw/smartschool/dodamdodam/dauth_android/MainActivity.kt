@@ -19,9 +19,9 @@ class MainActivity : AppCompatActivity() {
 
         findViewById<Button>(R.id.btn_login).setOnClickListener {
             loginForDodam(register, {
-                Toast.makeText(this, it.accessToken, Toast.LENGTH_SHORT).show()
+//                Toast.makeText(this, it.accessToken, Toast.LENGTH_SHORT).show()
             }, {
-                Toast.makeText(this, it.message, Toast.LENGTH_SHORT).show()
+//                Toast.makeText(this, it.message, Toast.LENGTH_SHORT).show()
             })
         }
     }
