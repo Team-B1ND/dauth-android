@@ -1,4 +1,4 @@
-package kr.hs.dgsw.smartschool.dodamdodam.dauth
+package kr.hs.dgsw.smartschool.dodamdodam.dauth.service
 
 import kr.hs.dgsw.smartschool.dodamdodam.dauth.request.LoginRequest
 import kr.hs.dgsw.smartschool.dodamdodam.dauth.request.TokenRequest

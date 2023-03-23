@@ -4,24 +4,24 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.Button
 import android.widget.Toast
-import kr.hs.dgsw.smartschool.dodamdodam.dauth.DAuth.loginForDodam
-import kr.hs.dgsw.smartschool.dodamdodam.dauth.DAuth.settingForDodam
+import kr.hs.dgsw.smartschool.dodamdodam.dauth.RetrofitClient.loginForDodam
+import kr.hs.dgsw.smartschool.dodamdodam.dauth.RetrofitClient.settingForDodam
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val clientId = "4e569073e96543aa8f1a9d8c681d30662467e67fbe4e4bbfa28fddfc28daf1b7"
-        val redirectUrl = "http://localhost:8000/redirect"
-        val clientSecret = "17912364762a4a1bb9d557d19b914f90cca92c4722ea45538f84f84ab95f91ba"
+        val clientId = "39bc523458c14eb987b7b16175426a31a9f105b7f5814f1f9eca7d454bd23c73"
+        val redirectUrl = "http://localhost:3000/callback"
+        val clientSecret = "e90b070b437f420eb788fad746e97a507984328ddf9142f481397ca6e7afda0e"
         val register = settingForDodam(clientId, clientSecret, redirectUrl)
 
         findViewById<Button>(R.id.btn_login).setOnClickListener {
             loginForDodam(register, {
-//                Toast.makeText(this, it.accessToken, Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, it.accessToken, Toast.LENGTH_SHORT).show()
             }, {
-//                Toast.makeText(this, it.message, Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, it.message, Toast.LENGTH_SHORT).show()
             })
         }
     }
