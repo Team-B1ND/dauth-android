@@ -12,30 +12,34 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
+import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kr.hs.dgsw.smartschool.dodamdodam.dauth.DAuth.checkError
 import kr.hs.dgsw.smartschool.dodamdodam.dauth.request.LoginRequest
 import kr.hs.dgsw.smartschool.dodamdodam.dauth.request.TokenRequest
 import kr.hs.dgsw.smartschool.dodamdodam.dauth.response.TokenResponse
 import kr.hs.dgsw.smartschool.dodamdodam.dauth.service.DAuthService
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import org.json.JSONObject
+import retrofit2.HttpException
+import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
-object RetrofitClient {
+object DAuth {
     private const val DODAM_PACKAGE = "kr.hs.dgsw.smartschool.dodamdodam"
     private const val ACTIVITY_URL =
         "kr.hs.dgsw.smartschool.dodamdodam.features.dauth.DAuthActivity"
     private const val DAUTH_URL = "https://dauth.b1nd.com/api/"
     private const val BASE_URL = "https://dodam.b1nd.com/api/"
 
-    private var isInstalled = true
-    private val tokenData = MutableLiveData<TokenResponse>()
+    private var isInstalled = false
+    private val token = MutableLiveData<TokenResponse>()
     private val error = MutableLiveData<Throwable>()
 
     private val okHttpClient = OkHttpClient().newBuilder()
@@ -62,18 +66,21 @@ object RetrofitClient {
 
     private val dAuth = dAuthRetrofit.create(DAuthService::class.java)
 
-    private suspend fun login(loginRequest: LoginRequest) =
-        withContext(CoroutineScope(Dispatchers.IO).coroutineContext) {
-            kotlin.runCatching {
-                dAuth.login(loginRequest)
-            }
+    private fun  <T> checkError(response: Response<T>): T {
+        if (response.isSuccessful.not()) {
+            val errorBody = JSONObject(response.errorBody()!!.string())
+            throw Throwable(errorBody.getString("message"))
         }
-
-    private suspend fun getToken(tokenRequest: TokenRequest) = kotlin.runCatching {
-        dAuth.getToken(tokenRequest)
+        return response.body()!!
     }
 
+    private suspend fun login(loginRequest: LoginRequest) = kotlin.runCatching {
+        checkError(dAuth.login(loginRequest))
+    }
 
+    private suspend fun getToken(tokenRequest: TokenRequest) = kotlin.runCatching {
+        checkError(dAuth.getToken(tokenRequest))
+    }
 
     fun ComponentActivity.settingForDodam(
         clientId: String,
@@ -85,7 +92,6 @@ object RetrofitClient {
         isInstalled = intent != null
 
         return registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-
             if (result.resultCode == Activity.RESULT_OK) {
 
                 val id = result.data?.getStringExtra("id") ?: ""
@@ -95,23 +101,15 @@ object RetrofitClient {
                     login(LoginRequest(id, pw, clientId, redirectUrl))
                         .onSuccess {
                             val code = it.data.location.split("=", "&")[1]
-                            getToken(TokenRequest(code, clientId, clientSecret))
-                                .onSuccess { token ->
-                                    Log.d("TOKEN", "settingForDodam: ${token.status} ${token.message} ${token.data}")
-//                                    launch(Dispatchers.Main) {
-//                                        tokenData.value = token.data
-//                                    }
 
+                            getToken(TokenRequest(code, clientId, clientSecret))
+                                .onSuccess { tokenValue ->
+                                    token.postValue(tokenValue)
                                 }.onFailure { tokenError ->
-                                    Log.d("ERROR", "settingForDodam: ${tokenError.message}")
-                                    launch(Dispatchers.Main) {
-                                        error.value = Throwable(tokenError.message)
-                                    }
+                                    error.postValue(tokenError)
                                 }
                         }.onFailure {
-                            launch(Dispatchers.Main) {
-                                error.value = Throwable(it.message)
-                            }
+                            error.postValue(Throwable(it))
                         }
                 }
             }
@@ -128,7 +126,7 @@ object RetrofitClient {
 
         if (isInstalled) register.launch(intent)
         else {
-            error.value = Throwable("도담도담을 설치해주세요")
+            error.postValue(Throwable("도담도담을 설치해주세요"))
 
             try {
                 startActivity(
@@ -147,11 +145,11 @@ object RetrofitClient {
             }
         }
 
-        tokenData.observe(this as LifecycleOwner) {
+        token.observe(this as LifecycleOwner) {
             onSuccess(it)
         }
         error.observe(this as LifecycleOwner) {
-            onFailure(it)
+            onFailure(Throwable(it.message!!.split(':').last()))
         }
     }
 }

@@ -2,7 +2,7 @@ package kr.hs.dgsw.smartschool.dodamdodam.dauth.response
 
 import com.google.gson.annotations.SerializedName
 
-data class Response<T>(
+data class BaseResponse<T>(
     @field:SerializedName("status")
     val status: Int,
     @field:SerializedName("message")

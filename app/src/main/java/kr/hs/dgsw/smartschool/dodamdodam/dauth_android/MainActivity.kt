@@ -4,8 +4,8 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.Button
 import android.widget.Toast
-import kr.hs.dgsw.smartschool.dodamdodam.dauth.RetrofitClient.loginForDodam
-import kr.hs.dgsw.smartschool.dodamdodam.dauth.RetrofitClient.settingForDodam
+import kr.hs.dgsw.smartschool.dodamdodam.dauth.DAuth.loginForDodam
+import kr.hs.dgsw.smartschool.dodamdodam.dauth.DAuth.settingForDodam
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
