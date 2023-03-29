@@ -7,19 +7,22 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.MutableLiveData
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import kr.hs.dgsw.smartschool.dodamdodam.dauth.request.LoginRequest
-import kr.hs.dgsw.smartschool.dodamdodam.dauth.request.TokenRequest
-import kr.hs.dgsw.smartschool.dodamdodam.dauth.response.TokenResponse
+import kotlinx.coroutines.withContext
+import kr.hs.dgsw.smartschool.dodamdodam.dauth.RetrofitClient.dAuthRetrofit
+import kr.hs.dgsw.smartschool.dodamdodam.dauth.RetrofitClient.retrofit
+import kr.hs.dgsw.smartschool.dodamdodam.dauth.model.request.LoginRequest
+import kr.hs.dgsw.smartschool.dodamdodam.dauth.model.request.RefreshTokenRequest
+import kr.hs.dgsw.smartschool.dodamdodam.dauth.model.request.TokenRequest
+import kr.hs.dgsw.smartschool.dodamdodam.dauth.model.response.RefreshTokenResponse
+import kr.hs.dgsw.smartschool.dodamdodam.dauth.model.response.TokenResponse
+import kr.hs.dgsw.smartschool.dodamdodam.dauth.model.response.UserResponse
 import kr.hs.dgsw.smartschool.dodamdodam.dauth.util.Constants
 import kr.hs.dgsw.smartschool.dodamdodam.dauth.util.repeatOnStarted
 import org.json.JSONObject
@@ -32,12 +35,6 @@ object DAuth {
         Intent().setComponent(ComponentName(Constants.DODAM_PACKAGE, Constants.ACTIVITY_URL))
 
     private val eventFlow = MutableEventFlow<Event>()
-
-//    private var account = MutableSharedFlow<Pair<String, String>>()
-
-    //    private val token = MutableLiveData<TokenResponse>()
-//    private val code = MutableLiveData<String>()
-    private val error = MutableLiveData<Throwable>()
 
     private lateinit var clientId: String
     private lateinit var clientSecret: String
@@ -53,9 +50,12 @@ object DAuth {
         return response.body()!!
     }
 
-    private fun login(loginRequest: LoginRequest) = CoroutineScope(Dispatchers.IO).launch {
+    private fun login(
+        loginRequest: LoginRequest,
+    ) = CoroutineScope(Dispatchers.IO).launch {
+
         kotlin.runCatching {
-            checkError(RetrofitClient.dAuth.login(loginRequest))
+            checkError(dAuthRetrofit.login(loginRequest))
         }.onSuccess {
             event(Event.SuccessLoginEvent(it.data.location.split("=", "&")[1]))
         }.onFailure {
@@ -63,9 +63,12 @@ object DAuth {
         }
     }
 
-    private fun getToken(tokenRequest: TokenRequest) = CoroutineScope(Dispatchers.IO).launch {
+    private fun getToken(
+        tokenRequest: TokenRequest,
+    ) = CoroutineScope(Dispatchers.IO).launch {
+
         kotlin.runCatching {
-            checkError(RetrofitClient.dAuth.getToken(tokenRequest))
+            checkError(RetrofitClient.dAuthRetrofit.getToken(tokenRequest))
         }.onSuccess {
             event(Event.SuccessTokenEvent(it))
         }.onFailure {
@@ -73,19 +76,49 @@ object DAuth {
         }
     }
 
-//    private suspend fun getRefreshToken(refreshTokenRequest: RefreshTokenRequest) = kotlin.runCatching {
-//        checkError(dAuth.getRefreshToken(refreshTokenRequest))
-//    }
+    fun getRefreshToken(
+        token: String,
+        clientId: String,
+        onSuccess: (RefreshTokenResponse) -> Unit,
+        onFailure: (Throwable) -> Unit
+    ) = CoroutineScope(Dispatchers.Main).launch {
 
-    private fun lunch(
+        kotlin.runCatching {
+            withContext(Dispatchers.IO) {
+                checkError(
+                    dAuthRetrofit.getRefreshToken(
+                        RefreshTokenRequest(token, clientId)
+                    )
+                )
+            }
+        }.onSuccess(onSuccess)
+        .onFailure(onFailure)
+    }
+
+    fun getUserInfo(
+        token: String,
+        onSuccess: (UserResponse) -> Unit,
+        onFailure: (Throwable) -> Unit,
+    ) = CoroutineScope(Dispatchers.Main).launch {
+
+        kotlin.runCatching {
+            withContext(Dispatchers.IO) {
+                checkError(retrofit.getUserInfo("Bearer $token"))
+            }
+        }.onSuccess {
+            onSuccess(it.data)
+        }.onFailure(onFailure)
+    }
+
+    private inline fun lunch(
         context: Context,
-        action: () -> Unit,
+        crossinline action: () -> Unit,
     ) {
         if (isInstalled) {
             register.launch(intent)
             action.invoke()
         } else {
-            error.postValue(Throwable("도담도담을 설치해주세요"))
+            event(Event.FailureEvent(Throwable("도담도담을 설치해주세요")))
 
             try {
                 context.startActivity(
@@ -110,14 +143,13 @@ object DAuth {
         clientSecret: String,
         redirectUrl: String,
     ) {
-        this@DAuth.clientId = clientId
-        this@DAuth.clientSecret = clientSecret
-        this@DAuth.redirectUrl = redirectUrl
+        DAuth.clientId = clientId
+        DAuth.clientSecret = clientSecret
+        DAuth.redirectUrl = redirectUrl
 
         isInstalled = packageManager.getLaunchIntentForPackage(Constants.DODAM_PACKAGE) != null
 
-        register =
-            registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        register = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
                 if (result.resultCode == Activity.RESULT_OK) {
                     val data = result.data
                     event(
@@ -138,8 +170,12 @@ object DAuth {
         (context as LifecycleOwner).repeatOnStarted {
             eventFlow.collect { event ->
                 when (event) {
-                    is Event.SuccessAccountEvent -> login(LoginRequest(event.id, event.pw, clientId, redirectUrl))
-                    is Event.SuccessLoginEvent -> getToken(TokenRequest(event.code, clientId, clientSecret))
+                    is Event.SuccessAccountEvent -> login(
+                        LoginRequest(event.id, event.pw, clientId, redirectUrl)
+                    )
+                    is Event.SuccessLoginEvent -> getToken(
+                        TokenRequest(event.code, clientId, clientSecret)
+                    )
                     is Event.SuccessTokenEvent -> onSuccess(event.token)
                     is Event.FailureEvent -> onFailure(event.exception)
                 }
@@ -155,7 +191,9 @@ object DAuth {
         (context as LifecycleOwner).repeatOnStarted {
             eventFlow.collect { event ->
                 when (event) {
-                    is Event.SuccessAccountEvent -> login(LoginRequest(event.id, event.pw, clientId, redirectUrl))
+                    is Event.SuccessAccountEvent -> login(
+                        LoginRequest(event.id, event.pw, clientId, redirectUrl)
+                    )
                     is Event.SuccessLoginEvent -> onSuccess(event.code)
                     is Event.FailureEvent -> onFailure(event.exception)
                     else -> {}

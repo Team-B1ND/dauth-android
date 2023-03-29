@@ -21,17 +21,17 @@ object RetrofitClient {
         .build()
 
 
-    private val dAuthRetrofit = Retrofit.Builder()
+    val dAuthRetrofit = Retrofit.Builder()
         .baseUrl(Constants.DAUTH_URL)
         .client(okHttpClient)
         .addConverterFactory(GsonConverterFactory.create(GsonBuilder().create()))
         .build()
+        .create(DAuthService::class.java)
 
-    private val retrofit = Retrofit.Builder()
+    val retrofit = Retrofit.Builder()
         .baseUrl(Constants.BASE_URL)
         .client(okHttpClient)
         .addConverterFactory(GsonConverterFactory.create(GsonBuilder().create()))
         .build()
-
-    val dAuth = dAuthRetrofit.create(DAuthService::class.java)
+        .create(DAuthService::class.java)
 }

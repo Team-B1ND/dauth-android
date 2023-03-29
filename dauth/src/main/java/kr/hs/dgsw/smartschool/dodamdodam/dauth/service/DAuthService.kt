@@ -1,14 +1,14 @@
 package kr.hs.dgsw.smartschool.dodamdodam.dauth.service
 
-import kr.hs.dgsw.smartschool.dodamdodam.dauth.request.LoginRequest
-import kr.hs.dgsw.smartschool.dodamdodam.dauth.request.RefreshTokenRequest
-import kr.hs.dgsw.smartschool.dodamdodam.dauth.request.TokenRequest
-import kr.hs.dgsw.smartschool.dodamdodam.dauth.response.LoginResponse
-import kr.hs.dgsw.smartschool.dodamdodam.dauth.response.BaseResponse
-import kr.hs.dgsw.smartschool.dodamdodam.dauth.response.RefreshTokenResponse
-import kr.hs.dgsw.smartschool.dodamdodam.dauth.response.TokenResponse
+import kr.hs.dgsw.smartschool.dodamdodam.dauth.model.request.LoginRequest
+import kr.hs.dgsw.smartschool.dodamdodam.dauth.model.request.RefreshTokenRequest
+import kr.hs.dgsw.smartschool.dodamdodam.dauth.model.request.TokenRequest
+import kr.hs.dgsw.smartschool.dodamdodam.dauth.model.response.*
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.GET
+import retrofit2.http.Header
+import retrofit2.http.Headers
 import retrofit2.http.POST
 
 interface DAuthService {
@@ -26,4 +26,9 @@ interface DAuthService {
     suspend fun getRefreshToken(
         @Body refreshTokenRequest: RefreshTokenRequest
     ): Response<RefreshTokenResponse>
+
+    @GET("user")
+    suspend fun getUserInfo(
+        @Header("Authorization") token: String
+    ): Response<BaseResponse<UserResponse>>
 }

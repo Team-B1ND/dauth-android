@@ -6,6 +6,7 @@ import android.widget.Button
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import kr.hs.dgsw.smartschool.dodamdodam.dauth.DAuth.getCode
+import kr.hs.dgsw.smartschool.dodamdodam.dauth.DAuth.getUserInfo
 import kr.hs.dgsw.smartschool.dodamdodam.dauth.DAuth.loginWithDodam
 import kr.hs.dgsw.smartschool.dodamdodam.dauth.DAuth.settingDAuth
 
@@ -26,11 +27,6 @@ class MainActivity : AppCompatActivity() {
             }, {
                 Toast.makeText(this, it.toString(), Toast.LENGTH_SHORT).show()
             })
-//            getCode(this, {
-//                Toast.makeText(this, it, Toast.LENGTH_SHORT).show()
-//            }, {
-//                Toast.makeText(this, it.toString(), Toast.LENGTH_SHORT).show()
-//            })
         }
     }
 }
