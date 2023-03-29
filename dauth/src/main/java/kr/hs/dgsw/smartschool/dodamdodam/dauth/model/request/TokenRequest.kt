@@ -1,4 +1,4 @@
-package kr.hs.dgsw.smartschool.dodamdodam.dauth.request
+package kr.hs.dgsw.smartschool.dodamdodam.dauth.model.request
 
 import com.google.gson.annotations.SerializedName
 

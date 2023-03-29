@@ -1,4 +1,4 @@
-package kr.hs.dgsw.smartschool.dodamdodam.dauth.response
+package kr.hs.dgsw.smartschool.dodamdodam.dauth.model.response
 
 import com.google.gson.annotations.SerializedName
 
