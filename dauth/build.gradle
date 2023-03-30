@@ -4,8 +4,6 @@ plugins {
     id 'maven-publish'
 }
 
-group='com.github.Team-B1ND'
-
 android {
     namespace 'kr.hs.dgsw.smartschool.dodamdodam.dauth'
     compileSdk 33
@@ -62,7 +60,7 @@ afterEvaluate {
 
                 groupId = 'com.github.Team-B1ND'
                 artifactId = 'dauth-android'
-                version = '1.0.0'
+                version = '1.0.1'
             }
 
             debug(MavenPublication) {
@@ -70,7 +68,7 @@ afterEvaluate {
 
                 groupId = 'com.github.Team-B1ND'
                 artifactId = 'dauth-android'
-                version = '1.0.0'
+                version = '1.0.1'
             }
         }
     }
