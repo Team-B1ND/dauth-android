@@ -53,3 +53,25 @@ dependencies {
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4'
 }
+
+afterEvaluate {
+    publishing {
+        publications {
+            release(MavenPublication) {
+                from components.release
+
+                groupId = 'com.github.Team-B1ND'
+                artifactId = 'dauth-android'
+                version = '1.0.3'
+            }
+
+            debug(MavenPublication) {
+                from components.debug
+
+                groupId = 'com.github.Team-B1ND'
+                artifactId = 'dauth-android'
+                version = '1.0.3'
+            }
+        }
+    }
+}
