@@ -60,7 +60,7 @@ afterEvaluate {
 
                 groupId = 'com.github.Team-B1ND'
                 artifactId = 'dauth-android'
-                version = '1.0.4'
+                version = '1.0.5'
             }
 
             debug(MavenPublication) {
@@ -68,7 +68,7 @@ afterEvaluate {
 
                 groupId = 'com.github.Team-B1ND'
                 artifactId = 'dauth-android'
-                version = '1.0.4'
+                version = '1.0.5'
             }
         }
     }
